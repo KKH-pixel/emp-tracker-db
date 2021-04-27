@@ -29,16 +29,8 @@ const runSearch = () => {
             'View all employees',
             'View all Departments',
             'View all Roles',
-            'Update employee',
-            'Update employee Department',
             'Update employee Role',
             'Exit',
-
-            // 'Remove employees',
-            // 'Remove Role',
-            // 'Remove Department',
-            // 'View all employees by Manager',
-            // 'Update Employee Manager',
       ],
     })
     .then((answer) => {
@@ -63,12 +55,16 @@ const runSearch = () => {
           createEmployee();
           break;
 
-        case 'Add new Role':
+        case 'Add new Roles':
           createRoles();
           break;
 
         case 'Add new Department':
           createDept();
+          break;
+
+        case 'Update employee Role':
+          updateRoles();
           break;
 
         case 'Exit':
@@ -223,31 +219,50 @@ const createEmployee = () => {
   })
 };
 
+
 const createRoles = () => {
-  connection.query('SELECT * FROM roles', (err, res) =>{
+  connection.query('SELECT * FROM departments', (err, res) =>{ 
     if (err) throw err;
-      inquirer
-      .prompt([
-        {
-          name: 'role_title',
-          type: 'input',
-          message: 'Job title:', 
-        }
+    let dept_array2 = res.map(dept => ({
+      name: dept.dept, 
+      value: dept.id,
+    }))
+    inquirer
+    .prompt([
+      {
+        name: 'roles_title',
+        type: 'input',
+        message: 'Job title:', 
+      },
+      {
+        name: 'roles_salary',
+        type: 'input',
+        message: 'Job salary:', 
+      },
+      {
+        name: 'dept_id',
+        type: 'list',
+        message: 'Please choose the correct department:', 
+        choices: dept_array2
+      },    
     ])
-      .then((answer) => {
+    .then((answer) => {
       connection.query(
         'INSERT INTO roles SET ?',
         {
-          title: answer.role_title,
+          title: answer.roles_title,
+          salary: answer.roles_salary,
+          dept_id: answer.dept_id,
         },
         (err, res) => {
           if (err) throw err;
-          console.log(`${res.affectedRows} Job title saved.\n`);
+          console.log(`${res.affectedRows} New Role saved.\n`);
           runSearch();
         }
       )});
     })
   };
+
 
   const createDept = () => {
     connection.query('SELECT * FROM departments', (err, res) =>{
@@ -262,7 +277,7 @@ const createRoles = () => {
       ])
         .then((answer) => {
         connection.query(
-          'INSERT INTO department SET ?',
+          'INSERT INTO departments SET ?',
           {
             dept: answer.department,
           },
@@ -275,3 +290,51 @@ const createRoles = () => {
       })
     };
 
+    const updateRoles = () => {
+      connection.query('SELECT * FROM employees', (err, res) =>{
+        if (err) throw err;
+        let employee_array = res.map(employee => ({
+          name: `${employee.first_name} ${employee.last_name}`, 
+          value: employee.id,
+        }))
+      connection.query('SELECT * FROM roles', (err, res) =>{
+        if (err) throw err;
+        let roles_array = res.map(role => ({
+          name: role.title, 
+          value: role.id,
+        }))
+        inquirer
+        .prompt([
+          {
+            name: 'emp_choice',
+            type: 'list',
+            message: 'Please choose employee to update:', 
+            choices: employee_array
+          }, 
+          {
+            name: 'new_role',
+            type: 'list',
+            message: 'Please choose role to update:', 
+            choices: roles_array
+          }, 
+      ])
+      .then((answer) => {
+        connection.query(
+          'UPDATE employees SET ? WHERE ?',
+          [
+          {
+            role_id: answer.new_role,
+          },
+          {
+            id: answer.emp_choice,
+          },
+          ],
+          (err, res) => {
+            if (err) throw err;
+            console.log(`${res.affectedRows} Employee saved.\n`);
+            runSearch();
+          }
+        )});
+      })
+    })
+  };
