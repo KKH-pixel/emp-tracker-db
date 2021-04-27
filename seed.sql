@@ -4,11 +4,12 @@ INSERT INTO departments (
 )
 
 VALUES (
-    1, 'Applesauce'
+    1, 'Code Poltergeists'
 ),
 (
-    2, 'Bakersville'
+    2, 'Data Pirates'
 );
+
 
 
 
@@ -20,10 +21,13 @@ INSERT INTO roles (
 )
 
 VALUES (
-    1, 'Database', 25000, 1
+    1, 'Full Stack Development', 80000, 2
 ),
 (
-    2, 'Manager', 50000, 1
+    2, 'Manager', 100000, 2
+),
+(
+    3, 'Front End Development', 60000, 1
 );
 
 
@@ -41,10 +45,18 @@ VALUES (
 ),
 (
     2, 'Dennis', 'Michaels', 1, 1
+),
+(
+    3, 'Ricardo', 'Hernandez', 2, NULL    
+),
+(
+    4, 'Clara', 'Browning', 1, 1
+),
+(
+    5, 'Domiique', 'Freeman', 3, 3
+),
+(
+    6, 'Aarav', 'Shere', 3, 3
 );
-
--- (
---     3, 'Louis', 'Brown', roles, NULL    
--- )
 
 
