@@ -23,44 +23,53 @@ const runSearch = () => {
       message: 'What would you like to do?',
       choices: [
             'Add employees',
-            'Add employee Department',
-            'Add employee Role',
+            'Add new Department',
+            'Add new Roles',
+            'Search for an employee',
             'View all employees',
-            'View all employees by Department',
-            'View all employees by Role',
+            'View all Departments',
+            'View all Roles',
             'Update employee',
             'Update employee Department',
             'Update employee Role',
             'Exit',
 
             // 'Remove employees',
-            // 'Remove employee Role',
-            // 'Remove employee Role',
+            // 'Remove Role',
+            // 'Remove Department',
             // 'View all employees by Manager',
             // 'Update Employee Manager',
       ],
     })
     .then((answer) => {
       switch (answer.action) {
-        case 'View all employees':
+        case 'Search for an employee':
           employeeSearch();
           break;
 
-        // case 'View all employees by Department':
-        //   deptSearch();
-        //   break;
+        case 'View all employees':
+          employeeView();
+          break;
 
-        // case 'View all employees by Role':
-        //   roleSearch();
-        //   break;
+        case 'View all Departments':
+           deptView();
+           break;
 
-        // case 'View all employees by Manager':
-        //   managerSearch();
-        //   break;
+        case 'View all Roles':
+          rolesView();
+          break;
 
-        // default:
-        //   console.log(`Invalid action: ${answer.action}`);
-        //   break;
+        case 'Add employees':
+          createEmployee();
+          break;
+
+        case 'Add new Role':
+          createRoles();
+          break;
+
+        case 'Add new Department':
+          createDept();
+          break;
 
         case 'Exit':
             console.log(`Exiting the program.`); 
@@ -69,12 +78,68 @@ const runSearch = () => {
     });
 };
 
+const employeeView = () => {
+  const query = `SELECT 
+  minion.id AS ID,
+  minion.first_name AS first_name,
+  minion.last_name AS last_name,
+  roles.title AS title,
+  roles.salary AS salary,
+  departments.dept AS department,
+  CASE
+  WHEN manager.id IS NOT NULL THEN CONCAT (manager.first_name, ' ', manager.last_name)
+  ELSE NULL
+  END manager
+  FROM employees AS minion
+  JOIN roles ON minion.role_id=roles.id
+  JOIN departments ON roles.dept_id=departments.id
+  LEFT OUTER JOIN employees AS manager ON minion.manager_id=manager.id
+  ORDER BY minion.id asc`;
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    console.table(res);
+
+    runSearch();
+  });
+}
+
+const deptView = () => {
+  const query = `SELECT 
+  departments.id AS id, 
+  departments.dept AS department 
+  FROM departments
+  ORDER BY departments.id asc`;
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    console.table(res);
+
+    runSearch();
+  });
+}
+
+const rolesView = () => {
+  const query = `SELECT 
+  roles.id AS ID,
+  roles.title AS title,
+  roles.salary AS salary,
+  departments.dept AS department
+  FROM roles
+  JOIN departments ON roles.dept_id=departments.id
+  ORDER BY roles.id asc`;
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    console.table(res);
+
+    runSearch();
+  });
+}
+
 const employeeSearch = () => {
   inquirer
     .prompt({
       name: 'employee',
       type: 'input',
-      message: 'What employee would you like to search for?',
+      message: 'Which employee would you like to search for?',
     })
     .then((answer) => {
       const query = `SELECT 
@@ -100,77 +165,113 @@ const employeeSearch = () => {
     });
 };
 
-// const deptSearch = () => {
-//   const query =
-//     'SELECT department FROM departments GROUP BY artist HAVING count(*) > 1';
-//   connection.query(query, (err, res) => {
-//     res.forEach(({ artist }) => console.log(artist));
-//     runSearch();
-//   });
-// };
+const createEmployee = () => {
+  connection.query('SELECT * FROM roles', (err, res) =>{
+    if (err) throw err;
+    let roles_array = res.map(role => ({
+      name: role.title, 
+      value: role.id,
+    }))
+    connection.query('SELECT * FROM employees', (err, res) =>{
+      if (err) throw err;
+      let manager_array = res.map(manager => ({
+        name: `${manager.first_name} ${manager.last_name}`, 
+        value: manager.id,
+      }))
+      inquirer
+      .prompt([
+        {
+          name: 'emp_first',
+          type: 'input',
+          message: 'First name:', 
+        },
+        {
+          name: 'emp_last',
+          type: 'input',
+          message: 'Last name:', 
+        },
+        {
+          name: 'emp_role',
+          type: 'list',
+          message: 'Employee title:', 
+          choices: roles_array
+        },    
+        {
+          name: 'emp_manager',
+          type: 'rawlist',
+          message: 'Manager name (if no manager, just hit enter):',
+          default: 'null',
+          choices: manager_array 
+        },
+    ])
+      .then((answer) => {
+      connection.query(
+        'INSERT INTO employees SET ?',
+        {
+          first_name: answer.emp_first,
+          last_name: answer.emp_last,
+          role_id: answer.emp_role,
+          manager_id: answer.emp_manager
+        },
+        (err, res) => {
+          if (err) throw err;
+          console.log(`${res.affectedRows} Employee saved.\n`);
+          runSearch();
+        }
+      )});
+    })
+  })
+};
 
-// const roleSearch = () => {
-//   inquirer
-//     .prompt([
-//       {
-//         name: 'start',
-//         type: 'input',
-//         message: 'Enter starting position: ',
-//         validate(value) {
-//           if (isNaN(value) === false) {
-//             return true;
-//           }
-//           return false;
-//         },
-//       },
-//       {
-//         name: 'end',
-//         type: 'input',
-//         message: 'Enter ending position: ',
-//         validate(value) {
-//           if (isNaN(value) === false) {
-//             return true;
-//           }
-//           return false;
-//         },
-//       },
-//     ])
-//     .then((answer) => {
-//       const query =
-//         'SELECT position,song,artist,year FROM top5000 WHERE position BETWEEN ? AND ?';
-//       connection.query(query, [answer.start, answer.end], (err, res) => {
-//         res.forEach(({ position, song, artist, year }) => {
-//           console.log(
-//             `Position: ${position} || Song: ${song} || Artist: ${artist} || Year: ${year}`
-//           );
-//         });
-//         runSearch();
-//       });
-//     });
-// };
+const createRoles = () => {
+  connection.query('SELECT * FROM roles', (err, res) =>{
+    if (err) throw err;
+      inquirer
+      .prompt([
+        {
+          name: 'role_title',
+          type: 'input',
+          message: 'Job title:', 
+        }
+    ])
+      .then((answer) => {
+      connection.query(
+        'INSERT INTO roles SET ?',
+        {
+          title: answer.role_title,
+        },
+        (err, res) => {
+          if (err) throw err;
+          console.log(`${res.affectedRows} Job title saved.\n`);
+          runSearch();
+        }
+      )});
+    })
+  };
 
-// const managerSearch = () => {
-//   inquirer
-//     .prompt({
-//       name: 'song',
-//       type: 'input',
-//       message: 'What song would you like to look for?',
-//     })
-//     .then((answer) => {
-//       console.log(answer.song);
-//       connection.query(
-//         'SELECT * FROM top5000 WHERE ?',
-//         { song: answer.song },
-//         (err, res) => {
-//           if (res[0]) {
-//             console.log(
-//               `Position: ${res[0].position} || Song: ${res[0].song} || Artist: ${res[0].artist} || Year: ${res[0].year}`
-//             );
-//           } else {
-//             console.error(`No results for ${answer.song}`);
-//           }
-//           runSearch();
-//         }
-//       );
-//     });
-// };
+  const createDept = () => {
+    connection.query('SELECT * FROM departments', (err, res) =>{
+      if (err) throw err;
+        inquirer
+        .prompt([
+          {
+            name: 'department',
+            type: 'input',
+            message: 'Department name:', 
+          }
+      ])
+        .then((answer) => {
+        connection.query(
+          'INSERT INTO department SET ?',
+          {
+            dept: answer.department,
+          },
+          (err, res) => {
+            if (err) throw err;
+            console.log(`${res.affectedRows} Department saved.\n`);
+            runSearch();
+          }
+        )});
+      })
+    };
+
